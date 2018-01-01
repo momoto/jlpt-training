@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container">
+
+  <div class="jumbotron text-center">
+    <h1 id="question">Hello, world!</h1>
+    <p id="timelimit">制限時間</p>
+  </div>
+  <form id="nandoku">
+    <div class="form-group">
+      <input id="answer" class="form-control input-lg" type="text" placeholder="よみがなを入力してください" aria-describedby="message">
+    </div>
+    <p id="message" class="help-block text-center">
+      漢字の読みがなを入力してください
+    </p>
+  </form>
+</div>
+
+<nav class="navbar navbar-fixed-bottom">
+  <div class="container-fluid">
+    <p class="navbar-text">
+      <p class="text-muted text-center">
+        <small>Powered by heroku</small>
+      </p>
+    </p>
+  </div>
+</nav>
+
+<script> jQuery(document).ready(function(){
+  var questions = [];
+  var timeoutSec = 10;
+  var intervalId = 0;
+
+  function setMessage(m) {
+      var message = jQuery("p#message").html(m).show();
+      var timeoutId = setTimeout(function(){
+          message.html("").fadeOut();
+      }, 900);
+  }
+    function getQuestion() {
+        return questions[Math.floor(Math.random()*questions.length)];
+    }
+    function setQuestion() {
+        clearInterval(intervalId);
+        var q = getQuestion();
+        var l = timeoutSec;
+        var question  = jQuery("#question");
+        var answer    = jQuery("#answer");
+        var timelimit = jQuery("#timelimit");
+        question.html(q[0]);
+        answer.val("");
+        answer.focus();
+        timelimit.html("残り" + l + "秒...");
+        intervalId = setInterval(function(){
+            if (--l < 1) {
+                clearInterval(intervalId);
+                timelimit.html("時間切れ... 正しくは「" + q[1] + "」です");
+            } else {
+                timelimit.html("残り" + l + "秒...");
+            }
+        }, 1000);
+        jQuery("form#nandoku").bind("submit", function(){
+            if (answer.val()===q[1]) {
+                clearInterval(intervalId);
+                setMessage("正解");
+                setQuestion();
+            } else if (answer.val() !== "") {
+                setMessage("不正解");
+            }
+            return false;
+        });
+    }
+  jQuery
+    .ajax({ url:"/kanji.csv" })
+    .success(function(csv){
+      var lines = csv.split(/\r\n|\r|\n/), line = [];
+      for (var i in lines) {
+        line = lines[i].split(",", 2);
+        if (line.length === 2 && line[0].length > 0 && line[1].length > 0)
+          questions[questions.length] = line;
+      }
+      if (questions.length > 0)
+        setQuestion();
+    });
+}); </script>
+
+{% endblock %}
